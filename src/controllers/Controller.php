@@ -23,40 +23,25 @@ class Controller {
 
     public function processOrder() {
         header('Content-Type: application/json');
-        try {
-            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-                throw new \Exception('Invalid request method');
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $pizza = Pizza::getById(filter_input(INPUT_POST, 'pizza', FILTER_VALIDATE_INT));
+            $size = Size::getById(filter_input(INPUT_POST, 'size', FILTER_VALIDATE_INT));
+            $sauce = Sauce::getById(filter_input(INPUT_POST, 'sauce', FILTER_VALIDATE_INT));
+
+            if ($pizza && $size && $sauce) {
+                $totalBYN = (new Calculator())->calculateTotal($pizza, $size, $sauce);
+                echo json_encode([
+                    'pizza' => $pizza->getName(),
+                    'size' => $size->getName(),
+                    'sauce' => $sauce->getName(),
+                    'total_byn' => number_format($totalBYN, 2)
+                ]);
+            } else {
+                echo json_encode(['error' => 'Invalid selection']);
             }
-
-            $pizzaId = filter_input(INPUT_POST, 'pizza', FILTER_VALIDATE_INT);
-            $sizeId = filter_input(INPUT_POST, 'size', FILTER_VALIDATE_INT);
-            $sauceId = filter_input(INPUT_POST, 'sauce', FILTER_VALIDATE_INT);
-
-            if (!$pizzaId || !$sizeId || !$sauceId) {
-                throw new \Exception('Invalid input data');
-            }
-
-            $pizza = Pizza::getById($pizzaId);
-            $size = Size::getById($sizeId);
-            $sauce = Sauce::getById($sauceId);
-
-            if (!$pizza || !$size || !$sauce) {
-                throw new \Exception('Invalid selection');
-            }
-
-            $calculator = new Calculator();
-            $totalBYN = $calculator->calculateTotal($pizza, $size, $sauce);
-
-            $response = [
-                'pizza' => $pizza->getName(),
-                'size' => $size->getName(),
-                'sauce' => $sauce->getName(),
-                'total_byn' => number_format($totalBYN, 2)
-            ];
-
-            echo json_encode($response);
-        } catch (\Exception $e) {
-            echo json_encode(['error' => $e->getMessage()]);
+        } else {
+            echo json_encode(['error' => 'Invalid request method']);
         }
     }
 }
